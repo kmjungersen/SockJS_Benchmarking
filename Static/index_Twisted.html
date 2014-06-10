@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Benchmarking</title>
+        <script src="http://code.jquery.com/jquery-latest.min.js"></script>
+        <script src="http://cdn.sockjs.org/sockjs-0.3.min.js"></script>
+
+        <script>
+            $(function() {
+
+                console.log('Welcome to Benchmarking!');
+
+                var Tor_Sock = null;
+
+                function connect() {
+                    Tor_Sock = new SockJS('http://127.0.0.1:8020');
+
+                    Tor_Sock.onopen = function() {
+                        console.log('opened sock');
+                        Tor_Sock.send('This is a message!');
+                    };
+
+                    Tor_Sock.onmessage = function(e) {
+                        Tor_Sock.send('Returning Message!')
+
+                    };
+
+                    Tor_Sock.onclose = function() {
+                        console.log('disconnected.');
+                        Tor_Sock = null;
+                        window.close();
+                    };
+
+                }   //connect
+
+                function disconnect() {
+                    console.log('disconnecting....');
+                    Tor_Sock.close();
+                }
+
+                connect();
+
+            });
+
+
+
+
+
+        </script>
+</head>
+<body>
+
+</body>
+</html>
