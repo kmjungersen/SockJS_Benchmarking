@@ -1,6 +1,6 @@
 from twisted.internet.protocol import Factory, Protocol
 from twisted.internet import reactor
-from txsockjs.factory import SockJSFactory, SockJSMultiFactory
+from txsockjs.factory import SockJSFactory
 from txsockjs.utils import broadcast
 
 import time
@@ -8,45 +8,73 @@ import os
 
 
 class TwistedChatConnection(Protocol):
-    MessageCount = 0
-    MessageTarget = 10000
-    MessageStartTime = 0
-    MessageStopTime = 0
-    Summary = ''
+    
+    message_count = 0
+    message_target = 10000
+    message_start_time = 0
+    message_stop_time = 0
+    setup_stop_time = 0
+    teardown_start_time = 0
+    summary = ''
+    
+    def setup(self):
+
+        self.message_target = 1000
 
     def connectionMade(self):
+
+        with open('data/setup_stop_time.txt', 'a+') as setup_stop_file:
+            self.setup_stop_time = time.time()
+            setup_stop_file.write(str(self.setup_stop_time) + '\n')
+
         if not hasattr(self.factory, "transports"):
             self.factory.transports = set()
         self.factory.transports.add(self.transport)
-        self.MessageStartTime = time.time()
+
+        with open('data/message_start_time.txt', 'a+') as message_start_file:
+            self.message_start_time = time.time()
+            message_start_file.write(str(self.message_start_time) + '\n')
 
     def dataReceived(self, data):
+
         broadcast(data, self.factory.transports)
-        self.MessageCount += 1
-        if self.MessageCount == self.MessageTarget:
+        self.message_count += 1
+
+        if self.message_count == self.message_target:
             reactor.stop()
 
     def connectionLost(self, reason=''):
-        self.MessageStopTime = time.time()
 
-        self.Summary += '=========================================\n'
-        self.Summary += 'TWISTED SUMMARY\n'
-        self.Summary += str(self.MessageCount)
-        self.Summary += ' total messages were sent/received in '
-        self.Summary += str(self.MessageStopTime - self.MessageStartTime)
-        self.Summary += ' seconds.\n'
-        self.Summary += '=========================================\n'
+        with open('data/message_stop_time.txt', 'a+') as message_stop_file:
+            self.message_stop_time = time.time()
+            message_stop_file.write(str(self.message_stop_time) + '\n')
 
-        print self.Summary
+        with open('data/teardown_start_time.txt', 'a+') as teardown_start_file:
+            self.teardown_start_time = time.time()
+            teardown_start_file.write(str(self.teardown_start_time) + '\n')
 
-def ServerSetup(port):
+        reactor.stop()
+
+    def summarize(self):
+
+        self.summary += '=========================================\n'
+        self.summary += 'twisted summary\n'
+        self.summary += str(self.message_count)
+        self.summary += ' total messages were sent/received in '
+        self.summary += str(self.message_stop_time - self.message_start_time)
+        self.summary += ' seconds.\n'
+        self.summary += '=========================================\n'
+
+        print self.summary
+
+def server_setup(port):
     f = SockJSFactory(Factory.forProtocol(TwistedChatConnection))
 
     reactor.listenTCP(port, f)
 
-    os.system('open /Users/kurtisjungersen/COS/NotificationCenterFiles/'
-              'SockJS_Testing/benchmarking/Static/index_Twisted.html')
+    os.system('open /_users/kurtisjungersen/cos/_notification_center_files/'
+              '_sock_js__testing/benchmarking/_static/index__twisted.html')
 
     reactor.run()
 
-#ServerSetup(8020)
+server_setup(8020)

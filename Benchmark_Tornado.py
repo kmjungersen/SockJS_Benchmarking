@@ -1,6 +1,3 @@
-'''Simple benchmarking program that will setup a connection, send X number
-of messages, and then report how long it took'''
-
 import sockjs.tornado
 import tornado.web
 import tornado.ioloop
@@ -10,79 +7,87 @@ import webbrowser
 
 class TornadoIndexHandler(tornado.web.RequestHandler):
 
-    """Regular HTTP handler to serve the chatroom page"""
+    """regular http handler to serve the chatroom page"""
     def get(self):
         self.render('static/index.html')
 
 
 class TornadoChatConnection(sockjs.tornado.SockJSConnection):
 
-    """Chat connection implementation"""
-    # Class level variable
+    """chat connection implementation"""
+    # class level variable
     participants = set()
-    MessageCount = 0
-    MessageTarget = 10000
-    MessageStartTime = 0
-    MessageStopTime = 0
-    Summary = ''
+    message_count = 0
+    message_target = 1000
+    message_start_time = 0
+    message_stop_time = 0
+    setup_stop_time = 0
+    teardown_start_time = 0
+    summary = ''
+
+    def setup(self):
+
+        self.message_target = 1000
 
     def on_open(self, info):
+        with open('data/setup_stop_time.txt', 'a+') as setup_stop_file:
+            self.setup_stop_time = time.time()
+            setup_stop_file.write(str(self.setup_stop_time) + '\n')
 
-        # Add client to the clients list
+        # add client to the clients list
         self.participants.add(self)
-        self.MessageStartTime = time.time()
-
+        with open('data/message_start_time.txt', 'a+') as message_start_file:
+            self.message_start_time = time.time()
+            message_start_file.write(str(self.message_start_time) + '\n')
 
     def on_message(self, message):
 
-        # Broadcast message
+        # broadcast message
         self.broadcast(self.participants, message)
-        self.MessageCount += 1
-        if self.MessageCount == self.MessageTarget:
+        self.message_count += 1
+        if self.message_count == self.message_target:
             self.close()
-            tornado.ioloop.IOLoop.instance().stop()
 
     def on_close(self):
 
-        # Remove client from the clients list and broadcast leave message
-        self.MessageStopTime = time.time()
+        # remove client from the clients list and broadcast leave message
+        with open('data/message_stop_time.txt', 'a+') as message_stop_file:
+            self.message_stop_time = time.time()
+            message_stop_file.write(str(self.message_stop_time) + '\n')
 
-        self.Summary += '=========================================\n'
-        self.Summary += 'TORNADO SUMMARY\n'
-        self.Summary += str(self.MessageCount)
-        self.Summary += ' total messages were sent/received in '
-        self.Summary += str(self.MessageStopTime - self.MessageStartTime)
-        self.Summary += ' seconds.\n'
-        self.Summary += '=========================================\n'
+        with open('data/teardown_start_time.txt', 'a+') as teardown_start_file:
+            self.teardown_start_time = time.time()
+            teardown_start_file.write(str(self.teardown_start_time) + '\n')
 
-        print self.Summary
+        #self.summarize()
 
         tornado.ioloop.IOLoop.instance().stop()
 
-        self.participants.remove(self)
+    def summarize(self):
+
+        self.summary += '=========================================\n'
+        self.summary += 'tornado summary\n'
+        self.summary += str(self.message_count)
+        self.summary += ' total messages were sent/received in '
+        self.summary += str(self.message_stop_time - self.message_start_time)
+        self.summary += ' seconds.\n'
+        self.summary += '=========================================\n'
+
+        print self.summary
 
 
-def ServerSetup(port):
+def server_setup(port):
 
-    # 1. Create chat router
-    TornadoRouter = sockjs.tornado.SockJSRouter(TornadoChatConnection, '/chat')
+    tornado_router = sockjs.tornado.SockJSRouter(TornadoChatConnection, '/chat')
 
-    # 2. Create Tornado application
     tornado_app = tornado.web.Application(
-            [(r"/", TornadoIndexHandler)] + TornadoRouter.urls
-    )
+        [(r"/", TornadoIndexHandler)] + tornado_router.urls)
 
-    # 3. Make Tornado app listen on port specified in benchmark program
     tornado_app.listen(port)
 
     address = 'http://127.0.0.1:' + str(port)
     webbrowser.open_new_tab(address)
 
-    # 4. Start IOLoop
     tornado.ioloop.IOLoop.instance().start()
 
-
-    #return TornadoChatConnection.Summary
-
-#if __name__ == '__main__':
-#ServerSetup(8000)
+server_setup(8000)

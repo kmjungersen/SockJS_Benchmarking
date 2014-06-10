@@ -3,69 +3,148 @@ import time
 from numpy import array, average
 import shutil
 import os
-IterationNumber = 10
 
 
-shutil.rmtree('Data/')
-os.mkdir('Data/')
+class SockJsBenchmarking():
 
-SetupStartFile = open('Data/SetupStartTime.txt', 'a+')
-TeardownStopFile = open('Data/TeardownStopTime.txt', 'a+')
+    def __init__(self):
+        '''This method sets up the '_data/' directory
+         for use.  it clears all existing files and
+         then recreates the new directory.'''
 
-#===================================================
-for x in range(0, IterationNumber):
+        shutil.rmtree('data/')
+        os.mkdir('data/')
 
-    SetupStartTime = time.time()
-    SetupStartFile.write(str(SetupStartTime) + '\n')
-    run('python Benchmark_Cyclone.py')
+        self.setup_start_file = open('data/setup_start_time.txt', 'a+')
+        self.teardown_stop_file = open('data/teardown_stop_time.txt', 'a+')
 
-    TeardownStopTime = time.time()
-    TeardownStopFile.write(str(TeardownStopTime) + '\n')
+        self.library = ''
+        self.verbose = False
 
-#===================================================
+        self.s_avg = 0
+        self.m_avg = 0
+        self.t_avg = 0
+        self.total = 0
 
-SetupStopFile = open('Data/SetupStopTime.txt', 'r')
-MessageStartFile = open('Data/MessageStartTime.txt', 'r')
-MessageStopFile = open('Data/MessageStopTime.txt', 'r')
-TeardownStartFile = open('Data/TeardownStartTime.txt', 'r')
+        self.iteration_number = 5
 
-s_start = []
-s_stop = []
-m_start = []
-m_stop = []
-t_start = []
-t_stop = []
+        self.get_user_input()
 
-SetupStartFile.seek(0)
-TeardownStopFile.seek(0)
+    def get_user_input(self):
+        '''This method gets the user's input as to which
+        library they want to test.'''
 
-for y in range(0, IterationNumber):
-    s_start.append(float(SetupStartFile.readline()))
-    s_stop.append(float(SetupStopFile.readline()))
+        print '========================================='
+        print 'Welcome to SockJS benchmarking!'
+        print '=========================================\n'
+        print 'There are 3 libraries to test:\n'
+        print '- tornado'
+        print '- cyclone'
+        print '- twisted\n'
+        print 'Which would you like to test?'
 
-    m_start.append(float(MessageStartFile.readline()))
-    m_stop.append(float(MessageStopFile.readline()))
+        self.library = raw_input('\n')
 
-    t_start.append(float(TeardownStartFile.readline()))
+        # print 'Verbose output? (y/n)'
+        #
+        # if raw_input() == 'y':
+        #
+        #     self.verbose = True
 
-    t_stop.append(float(TeardownStopFile.readline()))
+        print '\n\n'
 
-s_start_2 = array(s_start)
-s_stop_2 = array(s_stop)
-m_start = array(m_start)
-m_stop = array(m_stop)
-t_start = array(t_start)
-t_stop = array(t_stop)
+        if self.library == 'tornado' or \
+           self.library == 'cyclone' or \
+           self.library == 'twisted':
 
-s_diff = s_stop_2 - s_start_2
-m_diff = (m_stop - m_start)
-t_diff = (t_stop - t_start)
+            self.iterate()
 
-s_avg = average(s_diff)
-m_avg = average(m_diff)
-t_avg = average(t_diff)
+        else:
 
+            self.get_user_input()
 
-print s_avg
-print m_avg
-print t_avg
+    def iterate(self):
+        '''This 'for' loop will iterate over a number
+        of setup/messaging/teardown operations. the
+        user can customize this to run however many
+        times they want.'''
+
+        for x in range(0, self.iteration_number):
+
+            #marks the start time and then writes to file
+            setup_start_time = time.time()
+            self.setup_start_file.write(str(setup_start_time) + '\n')
+
+            run('python benchmark_' + self.library + '.py')
+
+            teardown_stop_time = time.time()
+            self.teardown_stop_file.write(str(teardown_stop_time) + '\n')
+
+        self.analyze_data()
+
+    def analyze_data(self):
+        setup_stop_file = open('data/setup_stop_time.txt', 'r')
+        message_start_file = open('data/message_start_time.txt', 'r')
+        message_stop_file = open('data/message_stop_time.txt', 'r')
+        teardown_start_file = open('data/teardown_start_time.txt', 'r')
+
+        s_start = []
+        s_stop = []
+        m_start = []
+        m_stop = []
+        t_start = []
+        t_stop = []
+
+        self.setup_start_file.seek(0)
+        self.teardown_stop_file.seek(0)
+
+        for y in range(0, self.iteration_number):
+            s_start.append(float(self.setup_start_file.readline()))
+            s_stop.append(float(setup_stop_file.readline()))
+
+            m_start.append(float(message_start_file.readline()))
+            m_stop.append(float(message_stop_file.readline()))
+
+            t_start.append(float(teardown_start_file.readline()))
+
+            t_stop.append(float(self.teardown_stop_file.readline()))
+
+        s_start_2 = array(s_start)
+        s_stop_2 = array(s_stop)
+        m_start = array(m_start)
+        m_stop = array(m_stop)
+        t_start = array(t_start)
+        t_stop = array(t_stop)
+
+        s_diff = s_stop_2 - s_start_2
+        m_diff =(m_stop - m_start)
+        t_diff =(t_stop - t_start)
+
+        self.s_avg = average(s_diff)
+        self.m_avg = average(m_diff)
+        self.t_avg = average(t_diff)
+
+        self.total = self.s_avg + self.m_avg + self.t_avg
+
+        self.report()
+
+    def report(self):
+
+        print '========================================='
+        print 'SockJS Benchmark Report'
+        print '=========================================\n'
+        print 'After ' + str(self.iteration_number) + ' iterations of the '
+        print self.library + ' library, the following metrics were obtained:\n'
+
+        print '___________________________'
+        print ' Phase      | Time (s)     '
+        print '------------|--------------'
+        print ' Startup    | %.4f' % self.s_avg + ' s'
+        print ' Messaging  | %.4f' % self.m_avg + ' s'
+        print ' Teardown   | %.4f' % self.t_avg + ' s'
+        print '---------------------------'
+        print ' Total      | %.4f' % self.total + ' s'
+        print '\n\n\n'
+
+if __name__ == '__main__':
+    SockJsBenchmarking()
