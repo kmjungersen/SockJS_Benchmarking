@@ -10,16 +10,16 @@ import os
 class TwistedChatConnection(Protocol):
     
     message_count = 0
-    message_target = 10000
+    message_target = 100
     message_start_time = 0
     message_stop_time = 0
     setup_stop_time = 0
     teardown_start_time = 0
     summary = ''
-    
-    def setup(self):
 
-        self.message_target = 1000
+    # def setup(self):
+    #
+    #     self.message_target = 1000
 
     def connectionMade(self):
 
@@ -53,7 +53,7 @@ class TwistedChatConnection(Protocol):
             self.teardown_start_time = time.time()
             teardown_start_file.write(str(self.teardown_start_time) + '\n')
 
-        reactor.stop()
+        #self.summarize()
 
     def summarize(self):
 
@@ -72,8 +72,7 @@ def server_setup(port):
 
     reactor.listenTCP(port, f)
 
-    os.system('open /_users/kurtisjungersen/cos/_notification_center_files/'
-              '_sock_js__testing/benchmarking/_static/index__twisted.html')
+    os.system('open static/index_twisted.html')
 
     reactor.run()
 

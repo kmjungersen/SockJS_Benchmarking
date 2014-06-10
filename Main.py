@@ -12,12 +12,6 @@ class SockJsBenchmarking():
          for use.  it clears all existing files and
          then recreates the new directory.'''
 
-        shutil.rmtree('data/')
-        os.mkdir('data/')
-
-        self.setup_start_file = open('data/setup_start_time.txt', 'a+')
-        self.teardown_stop_file = open('data/teardown_stop_time.txt', 'a+')
-
         self.library = ''
         self.verbose = False
 
@@ -26,32 +20,37 @@ class SockJsBenchmarking():
         self.t_avg = 0
         self.total = 0
 
+        self.tornado_sum = []
+        self.cyclone_sum = []
+        self.twisted_sum = []
+
         self.iteration_number = 5
 
-        self.get_user_input()
+        print '========================================='
+        print 'Welcome to SockJS benchmarking!'
+        print '=========================================\n'
+
+        #self.get_user_input()
+        self.library = 'tornado'
+        self.iterate()
 
     def get_user_input(self):
         '''This method gets the user's input as to which
         library they want to test.'''
 
-        print '========================================='
-        print 'Welcome to SockJS benchmarking!'
-        print '=========================================\n'
-        print 'There are 3 libraries to test:\n'
+        print 'There are 3 libraries to test:'
         print '- tornado'
         print '- cyclone'
         print '- twisted\n'
         print 'Which would you like to test?'
 
-        self.library = raw_input('\n')
+        self.library = raw_input()
 
         # print 'Verbose output? (y/n)'
         #
         # if raw_input() == 'y':
         #
         #     self.verbose = True
-
-        print '\n\n'
 
         if self.library == 'tornado' or \
            self.library == 'cyclone' or \
@@ -68,6 +67,12 @@ class SockJsBenchmarking():
         of setup/messaging/teardown operations. the
         user can customize this to run however many
         times they want.'''
+
+        shutil.rmtree('data/')
+        os.mkdir('data/')
+
+        self.setup_start_file = open('data/setup_start_time.txt', 'a+')
+        self.teardown_stop_file = open('data/teardown_stop_time.txt', 'a+')
 
         for x in range(0, self.iteration_number):
 
@@ -123,28 +128,77 @@ class SockJsBenchmarking():
         self.s_avg = average(s_diff)
         self.m_avg = average(m_diff)
         self.t_avg = average(t_diff)
-
         self.total = self.s_avg + self.m_avg + self.t_avg
 
-        self.report()
+        self.setup_start_file.close()
+        setup_stop_file.close()
+        message_start_file.close()
+        message_stop_file.close()
+        teardown_start_file.close()
+        self.teardown_stop_file.close()
+
+        if self.library == 'tornado':
+
+            self.tornado_sum.append(self.s_avg)
+            self.tornado_sum.append(self.m_avg)
+            self.tornado_sum.append(self.t_avg)
+            self.tornado_sum.append(self.total)
+
+            self.library = 'cyclone'
+            self.iterate()
+
+        elif self.library == 'cyclone':
+
+            self.cyclone_sum.append(self.s_avg)
+            self.cyclone_sum.append(self.m_avg)
+            self.cyclone_sum.append(self.t_avg)
+            self.cyclone_sum.append(self.total)
+
+            self.library = 'twisted'
+            self.iterate()
+
+        else:
+
+            self.twisted_sum.append(self.s_avg)
+            self.twisted_sum.append(self.m_avg)
+            self.twisted_sum.append(self.t_avg)
+            self.twisted_sum.append(self.total)
+
+            self.report()
 
     def report(self):
 
-        print '========================================='
-        print 'SockJS Benchmark Report'
-        print '=========================================\n'
-        print 'After ' + str(self.iteration_number) + ' iterations of the '
-        print self.library + ' library, the following metrics were obtained:\n'
+        print '========================================================='
+        print 'SockJS Benchmark Report - ' + self.library.upper()
+        print '=========================================================\n'
+        # print 'After ' + str(self.iteration_number) + ' iterations of the '
+        # print self.library + ' library, the following metrics were obtained:\n'
 
-        print '___________________________'
-        print ' Phase      | Time (s)     '
-        print '------------|--------------'
-        print ' Startup    | %.4f' % self.s_avg + ' s'
-        print ' Messaging  | %.4f' % self.m_avg + ' s'
-        print ' Teardown   | %.4f' % self.t_avg + ' s'
-        print '---------------------------'
-        print ' Total      | %.4f' % self.total + ' s'
-        print '\n\n\n'
+        print '_________________________________________________________'
+        print '            |                  Time (s)                  '
+        print '   Phase    |--------------------------------------------'
+        print '            |    Tornado   |   Cyclone    |   Twisted    '
+        print '------------|--------------|--------------|--------------'
+        print ' Startup    |    {:.4f}    |   {:.4f}     |   {:.4f}     '.\
+            format(self.tornado_sum[0],
+                   self.cyclone_sum[0],
+                   self.twisted_sum[0])
+        print ' Messaging  |    {:.4f}    |   {:.4f}     |   {:.4f}     '.\
+            format(self.tornado_sum[1],
+                   self.cyclone_sum[1],
+                   self.twisted_sum[1])
+        print ' Teardown   |    {:.4f}    |   {:.4f}     |   {:.4f}     '.\
+            format(self.tornado_sum[2],
+                   self.cyclone_sum[2],
+                   self.twisted_sum[2])
+        print '------------|--------------|--------------|--------------'
+        print ' Total      |    {:.4f}    |   {:.4f}     |   {:.4f}     '.\
+            format(self.tornado_sum[3],
+                   self.cyclone_sum[3],
+                   self.twisted_sum[3])
+
+        print '\n'
+
 
 if __name__ == '__main__':
     SockJsBenchmarking()

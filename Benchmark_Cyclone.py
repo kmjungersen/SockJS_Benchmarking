@@ -23,9 +23,9 @@ class CycloneChatConnection(sockjs.cyclone.SockJSConnection):
     teardown_start_time = 0
     summary = ''
 
-    def setup(self):
-
-        self.message_target = 1000
+    # def setup(self):
+    #
+    #     self.message_target = 1000
 
     def connectionMade(self, info):
         with open('data/setup_stop_time.txt', 'a+') as setup_stop_file:
@@ -45,7 +45,7 @@ class CycloneChatConnection(sockjs.cyclone.SockJSConnection):
         self.message_count += 1
 
         if self.message_count == self.message_target:
-            self.close()
+            reactor.stop()
 
     def connectionLost(self):
 
@@ -59,7 +59,7 @@ class CycloneChatConnection(sockjs.cyclone.SockJSConnection):
 
         #self.summarize()
 
-        reactor.stop()
+
 
     def summarize(self):
 

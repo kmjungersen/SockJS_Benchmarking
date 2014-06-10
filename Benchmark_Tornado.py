@@ -18,24 +18,24 @@ class TornadoChatConnection(sockjs.tornado.SockJSConnection):
     # class level variable
     participants = set()
     message_count = 0
-    message_target = 1000
+    message_target = 100
     message_start_time = 0
     message_stop_time = 0
     setup_stop_time = 0
     teardown_start_time = 0
     summary = ''
 
-    def setup(self):
-
-        self.message_target = 1000
+    # def setup(self):
+    #
+    #     self.message_target = 1000
 
     def on_open(self, info):
         with open('data/setup_stop_time.txt', 'a+') as setup_stop_file:
             self.setup_stop_time = time.time()
             setup_stop_file.write(str(self.setup_stop_time) + '\n')
 
-        # add client to the clients list
         self.participants.add(self)
+
         with open('data/message_start_time.txt', 'a+') as message_start_file:
             self.message_start_time = time.time()
             message_start_file.write(str(self.message_start_time) + '\n')
@@ -47,10 +47,8 @@ class TornadoChatConnection(sockjs.tornado.SockJSConnection):
         self.message_count += 1
         if self.message_count == self.message_target:
             self.close()
-
     def on_close(self):
 
-        # remove client from the clients list and broadcast leave message
         with open('data/message_stop_time.txt', 'a+') as message_stop_file:
             self.message_stop_time = time.time()
             message_stop_file.write(str(self.message_stop_time) + '\n')
@@ -59,9 +57,10 @@ class TornadoChatConnection(sockjs.tornado.SockJSConnection):
             self.teardown_start_time = time.time()
             teardown_start_file.write(str(self.teardown_start_time) + '\n')
 
+        tornado.ioloop.IOLoop.instance().stop()
+
         #self.summarize()
 
-        tornado.ioloop.IOLoop.instance().stop()
 
     def summarize(self):
 
