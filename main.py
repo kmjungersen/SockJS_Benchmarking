@@ -44,35 +44,44 @@ class SockJsBenchmarking():
         print '- twisted\n'
         print 'Which would you like to test?'
 
-        self.library = raw_input()
+        #self.library = raw_input()
 
-        # print 'Verbose output? (y/n)'
-        #
-        # if raw_input() == 'y':
-        #
-        #     self.verbose = True
+        #TODO(kmjungersen) - Provide a way to easily turn on/off verbose
+        #TODO                output from each library being tested
 
         if self.library == 'tornado' or \
            self.library == 'cyclone' or \
            self.library == 'twisted':
 
-            self.iterate()
+            self.directory_setup()
 
         else:
 
             self.get_user_input()
+
+    def directory_setup(self):
+
+        #TODO - comments
+
+        shutil.rmtree('data/')
+        os.mkdir('data/')
+
+        with open('.gitignore', 'r') as infile,\
+             open('data/.gitignore', 'w+') as outfile:
+
+            f = infile.read()
+            outfile.write(f)
+
+        self.setup_start_file = open('data/setup_start_time.txt', 'a+')
+        self.teardown_stop_file = open('data/teardown_stop_time.txt', 'a+')
+
+        self.iterate()
 
     def iterate(self):
         '''This 'for' loop will iterate over a number
         of setup/messaging/teardown operations. the
         user can customize this to run however many
         times they want.'''
-
-        shutil.rmtree('data/')
-        os.mkdir('data/')
-
-        self.setup_start_file = open('data/setup_start_time.txt', 'a+')
-        self.teardown_stop_file = open('data/teardown_stop_time.txt', 'a+')
 
         for x in range(0, self.iteration_number):
 
